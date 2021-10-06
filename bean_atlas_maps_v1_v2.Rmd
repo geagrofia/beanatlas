@@ -36,11 +36,6 @@ knitr::opts_chunk$set(tidy.opts=list(width.cutoff=60), tidy=TRUE)
 
 ```{r packages}
 
-library(gitcreds)
-
-gitcreds_set()
-
-
 library(terra)
 library(raster)
 library(sf)
@@ -63,8 +58,13 @@ Here I load the data from the first and second bean atlases of africa.
 
 ## Basemap
 
-``` {r, results = 'asis', echo = T, cache=TRUE, fig.height = 4, fig.width = 7}
+There are two types of basemaps:
 
+(1) GADM country boundaries
+(2) terrain mapping with oceans
+
+
+``` {r, results = 'asis', echo = T, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "GADM country boundaries", dev = 'png'}
 
 
 misc <- list()
@@ -141,6 +141,11 @@ myAfricaMap <- ggplot() +
   )
 myAfricaMap
 
+```
+
+
+``` {r, results = 'asis', echo = T, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Terrain basemap", dev = 'png'}
+
 # basemap with ggmap
 
 myMap <- get_stamenmap(bbox = c(left = -20,
@@ -161,7 +166,7 @@ ggbackground
 
 ## V1 Bean Atlas polygons
 
-```{r bean_atlas_1, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+```{r bean_atlas_1, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Version 1 MBPAs - terrain", dev = 'png'}
 
 v_bean_atlas_poly_1 <- st_read("D:/DatosProyecto/SpatialData/Africa/africa/RootRot/beanatlas/Ciatdb/BEANDB/Themes/Beanplys.shp")
 
@@ -180,9 +185,12 @@ ggmap(myMap) +
 
 ```
 
+
 ### Attributes 
 
-```{r bean_atlas_1_join, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+There are three attribute files in dbf format:
+
+```{r bean_atlas_1_join, cache=TRUE}
 
 # main_crop - intercrop dbf details
 
@@ -222,39 +230,10 @@ str(v_bean_atlas_poly_1_main_mbp)
 
 ```
 
-map the joins
+Map the joins
 
-```{r bean_atlas_1_join_map, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
 
-maize_1 <- myAfricaMap +  
-  geom_sf(
-    data = v_bean_atlas_poly_1_main_crop,
-    aes(fill = MZ),
-    col = NA,
-    alpha = 1,
-    inherit.aes = FALSE
-  )  + 
-    scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "Greens")
-
-sole_1 <- myAfricaMap +  
-  geom_sf(
-    data = v_bean_atlas_poly_1_main_crop,
-    aes(fill = SC),
-    col = NA,
-    alpha = 1,
-    inherit.aes = FALSE
-  )  + 
-    scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "Blues")
-
-myAfricaMap +
-  geom_sf(
-    data = v_bean_atlas_poly_1_main_var,
-    aes(fill = VAR),
-    col = "red",
-    alpha = 1,
-    inherit.aes = FALSE
-  )
-
+```{r bean_atlas_1_join_map_1, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Version 1 MBPAs - GADM", dev = 'png'}
 
 myAfricaMap +
   geom_sf(
@@ -273,6 +252,32 @@ myAfricaMap +
     inherit.aes = FALSE
   )
 
+```
+
+```{r bean_atlas_1_join_map_2, cache=TRUE}
+
+maize_1 <- myAfricaMap +  
+  geom_sf(
+    data = v_bean_atlas_poly_1_main_crop,
+    aes(fill = MZ),
+    col = NA,
+    alpha = 1,
+    inherit.aes = FALSE
+  )  + 
+    scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "Greens")
+
+
+sole_1 <- myAfricaMap +  
+  geom_sf(
+    data = v_bean_atlas_poly_1_main_crop,
+    aes(fill = SC),
+    col = NA,
+    alpha = 1,
+    inherit.aes = FALSE
+  )  + 
+    scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "Blues")
+
+
 habit_1 <- myAfricaMap +
   geom_sf(
     data = v_bean_atlas_poly_1_main_mbp,
@@ -284,23 +289,16 @@ habit_1 <- myAfricaMap +
     scale_fill_manual(values = c( "light green", "light yellow", "sky blue","dark green")) +
   labs(fill = "----------\nC Bean\n----------")
  
-
 ```
 
 ## V2 Bean Atlas polygons
 
-```{r bean_atlas_2, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+```{r bean_atlas_2, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Version 2 MBPAs", dev = 'png'}
 
 v_bean_atlas_poly_2 <- st_read("D:/DatosProyecto/SpatialData/Africa/africa/RootRot/beanatlas/Ciatdb/BEANDB/Themes/Dataverse/AtlasBean_Data.shp")
 
 st_crs(v_bean_atlas_poly_2) = 4326
 str(v_bean_atlas_poly_2)
-#v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2 %>% replace_with_na(replace = list(CS_Maize = c(-999, -9999)))
-#v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2NA %>% replace_with_na(replace = list(CS_Sole = c(-999, -9999)))
-#v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2 %>% replace_with_na(replace = list(SD_GH_CL_A = c(-999, -9999)))
-v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2 %>% replace_with_na(replace = list(SD_GH_SCL_ = c(-999, -9999)))
-
-str(v_bean_atlas_poly_2NA)
 
 
 myAfricaMap +
@@ -315,7 +313,7 @@ myAfricaMap +
     data = v_bean_atlas_poly_2,
     stat = "sf_coordinates",
     position = "identity",
-    aes(geometry = geometry, label = paste(MBPA_NAME)),
+    aes(geometry = geometry, label = paste(MBPA_ID)),
     size = 2,
     inherit.aes = FALSE
   )
@@ -324,9 +322,13 @@ myAfricaMap +
 
 Plot variables
 
-```{r bean_atlas_2, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+```{r bean_atlas_2_plot, cache=TRUE}
 
+# maize intercrop
 
+v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2 %>% replace_with_na(replace = list(CS_Maize = c(-999, -9999)))
+
+str(v_bean_atlas_poly_2NA)
 maize_2 <- myAfricaMap +  
   geom_sf(
     data = v_bean_atlas_poly_2NA,
@@ -336,6 +338,11 @@ maize_2 <- myAfricaMap +
     inherit.aes = FALSE
   )  + 
     scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "Greens")
+
+
+# sole crop
+
+v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2NA %>% replace_with_na(replace = list(CS_Sole = c(-999, -9999)))
 
 sole_2 <- myAfricaMap +  
   geom_sf(
@@ -348,6 +355,10 @@ sole_2 <- myAfricaMap +
     scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "Blues")
 
 
+# climbing bean
+
+v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2 %>% replace_with_na(replace = list(SD_GH_CL_A = c(-999, -9999)))
+
 habit_2 <- myAfricaMap +  
   geom_sf(
     data = v_bean_atlas_poly_2NA,
@@ -358,6 +369,11 @@ habit_2 <- myAfricaMap +
   )  + 
     scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "YlGn", na.value="white") +
   labs(fill = "----------\nC Bean\n----------")
+
+
+# semi-climbing bean
+
+v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2 %>% replace_with_na(replace = list(SD_GH_SCL_ = c(-999, -9999)))
 
 habit_2s <- myAfricaMap +  
   geom_sf(
@@ -375,9 +391,12 @@ habit_2s <- myAfricaMap +
 
 # Compare
 
+Here I plot the maps from the first and second versions together for a visual analysis of changes.
+
+
 ## Sole crop
 
-```{r sole_compare, cache=TRUE, fig.height = 10, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+```{r sole_compare, cache=TRUE, fig.height = 10, fig.width = 7, fig.cap = "Comparison of sole cropping system", dev = 'png'}
 
 grid.arrange(sole_1, sole_2)
 
@@ -385,7 +404,7 @@ grid.arrange(sole_1, sole_2)
 
 ## Maize intercrop
 
-```{r maize_compare, cache=TRUE, fig.height = 10, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+```{r maize_compare, cache=TRUE, fig.height = 10, fig.width = 7, fig.cap = "Comparison of bean/maize intercropping system", dev = 'png'}
 
 grid.arrange(maize_1, maize_2)
 
@@ -393,7 +412,7 @@ grid.arrange(maize_1, maize_2)
 
 ## Climbing bean
 
-```{r CB_compare, cache=TRUE, fig.height = 15, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+```{r CB_compare, cache=TRUE, fig.height = 15, fig.width = 7, fig.cap = "Comparison of climbing bean distribution", dev = 'png'}
 
 grid.arrange(habit_1, habit_2, habit_2s)
 
