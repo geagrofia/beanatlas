@@ -1,0 +1,400 @@
+---
+title: "bean Atlas maps"
+author: "A Farrow"
+date: "04/10/2021"
+header-includes:
+   - \usepackage[default]{sourcesanspro}
+   - \usepackage[T1]{fontenc}
+mainfont: SourceSansPro
+output:
+  pdf_document:
+    dev: png
+fontsize: 12pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  dpi = 300,
+  echo = FALSE,
+  results = 'hide' ,
+  fig.path = "figures/",
+  dev = 'png',
+  message = FALSE,
+  warning = FALSE
+)
+
+options(width = 250, dplyr.width = 120)
+
+```
+
+```{r}
+
+# Set so that long lines in R will be wrapped:
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=60), tidy=TRUE)
+
+```
+
+```{r packages}
+
+library(gitcreds)
+
+gitcreds_set()
+
+
+library(terra)
+library(raster)
+library(sf)
+library(tidyverse)
+library(ggplot2)
+library(basemaps)
+library(ggmap)
+library(foreign)
+library(RColorBrewer)
+library(naniar)
+library(gridExtra)
+
+```
+
+# Introduction
+
+Here I load the data from the first and second bean atlases of africa.
+
+# Load data
+
+## Basemap
+
+``` {r, results = 'asis', echo = T, cache=TRUE, fig.height = 4, fig.width = 7}
+
+
+
+misc <- list()
+misc$countries <-
+  c(
+    "AGO",
+    "BDI",
+    "BEN",
+    "BFA" ,
+    "BWA",
+    "CAF" ,
+    "CIV" ,
+    "CMR" ,
+    "COD" ,
+    "COG" ,
+    "COM" ,
+    "CPV" ,
+    "DJI" ,
+    "DZA" ,
+    "EGY" ,
+    "ERI" ,
+    "ESH",
+    "ETH",
+    "GAB" ,
+    "GHA",
+    "GIN" ,
+    "GMB" ,
+    "GNB" ,
+    "GNQ" ,
+    "KEN" ,
+    "LBR",
+    "LBY" ,
+    "LSO" ,
+    "MAR" ,
+    "MDG" ,
+    "MLI" ,
+    "MOZ" ,
+    "MRT" ,
+    "MUS" ,
+    "MWI" ,
+    "NAM" ,
+    "NER" ,
+    "NGA" ,
+    "REU" ,
+    "RWA" ,
+    "SDN" ,
+    "SEN" ,
+    "SLE" ,
+    "SOM" ,
+    "SSD",
+    "STP" ,
+    "SWZ" ,
+    "TCD" ,
+    "TGO" ,
+    "TUN" ,
+    "TZA" ,
+    "UGA" ,
+    "ZAF" ,
+    "ZMB" ,
+    "ZWE"
+  )
+v_adm_afr <- st_as_sf(do.call("bind", lapply(misc$countries, 
+                                    function(x) getData('GADM', country=x, level=0))))
+
+
+myAfricaMap <- ggplot() +
+  geom_sf(
+    data = v_adm_afr,
+    col = "grey",
+    fill = "white",
+    alpha = 1,
+    fill = NA,
+    inherit.aes = FALSE
+  )
+myAfricaMap
+
+# basemap with ggmap
+
+myMap <- get_stamenmap(bbox = c(left = -20,
+                                    bottom = -36,
+                                    right = 52,
+                                    top = 23),
+          maptype = "terrain-background", 
+          crop = T,
+          zoom = 6)
+
+
+# plot map
+ggbackground <- ggmap(myMap) 
+
+ggbackground
+
+```
+
+## V1 Bean Atlas polygons
+
+```{r bean_atlas_1, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+
+v_bean_atlas_poly_1 <- st_read("D:/DatosProyecto/SpatialData/Africa/africa/RootRot/beanatlas/Ciatdb/BEANDB/Themes/Beanplys.shp")
+
+st_crs(v_bean_atlas_poly_1) = 4326
+v_bean_atlas_poly_1
+
+ggmap(myMap) +
+  
+  geom_sf(
+    data = v_bean_atlas_poly_1,
+    aes(fill = BEANPOLY_I),
+    col = "red",
+    alpha = 0.25,
+    inherit.aes = FALSE
+  ) 
+
+```
+
+### Attributes 
+
+```{r bean_atlas_1_join, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+
+# main_crop - intercrop dbf details
+
+dB_bean_atlas_main_crop <- read.dbf("D:/DatosProyecto/SpatialData/Africa/africa/RootRot/beanatlas/Ciatdb/BEANDB/Tables/Main_crop.dbf", as.is = TRUE)
+
+str(dB_bean_atlas_main_crop)
+
+v_bean_atlas_poly_1_main_crop <- inner_join(v_bean_atlas_poly_1, dB_bean_atlas_main_crop, by = c("BEANPOLY_I" = "PLY2_ID"))
+str(v_bean_atlas_poly_1_main_crop)
+
+
+# main_var - variety diveristy details
+
+dB_bean_atlas_main_var <- read.dbf("D:/DatosProyecto/SpatialData/Africa/africa/RootRot/beanatlas/Ciatdb/BEANDB/Tables/Main_var.dbf", as.is = TRUE)
+
+str(dB_bean_atlas_main_var)
+
+v_bean_atlas_poly_1_main_var <- inner_join(v_bean_atlas_poly_1, dB_bean_atlas_main_var, by = c("BEANPOLY_I" = "PLY2_ID"))
+str(v_bean_atlas_poly_1_main_var)
+
+
+# afptdata
+
+dB_bean_atlas_afptdata <- read.dbf("D:/DatosProyecto/SpatialData/Africa/africa/RootRot/beanatlas/Ciatdb/BEANDB/Tables/afptdata.dbf", as.is = TRUE)
+
+str(dB_bean_atlas_afptdata)
+
+
+# main_mbp - general attributes
+
+dB_bean_atlas_main_mbp <- read.dbf("D:/DatosProyecto/SpatialData/Africa/africa/RootRot/beanatlas/Ciatdb/BEANDB/Tables/Main_mbp.dbf", as.is = TRUE)
+
+str(dB_bean_atlas_main_mbp)
+
+v_bean_atlas_poly_1_main_mbp <- inner_join(v_bean_atlas_poly_1, dB_bean_atlas_main_mbp, by = c("BEANPOLY_I" = "PLY2_ID"))
+str(v_bean_atlas_poly_1_main_mbp)
+
+```
+
+map the joins
+
+```{r bean_atlas_1_join_map, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+
+maize_1 <- myAfricaMap +  
+  geom_sf(
+    data = v_bean_atlas_poly_1_main_crop,
+    aes(fill = MZ),
+    col = NA,
+    alpha = 1,
+    inherit.aes = FALSE
+  )  + 
+    scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "Greens")
+
+sole_1 <- myAfricaMap +  
+  geom_sf(
+    data = v_bean_atlas_poly_1_main_crop,
+    aes(fill = SC),
+    col = NA,
+    alpha = 1,
+    inherit.aes = FALSE
+  )  + 
+    scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "Blues")
+
+myAfricaMap +
+  geom_sf(
+    data = v_bean_atlas_poly_1_main_var,
+    aes(fill = VAR),
+    col = "red",
+    alpha = 1,
+    inherit.aes = FALSE
+  )
+
+
+myAfricaMap +
+  geom_sf(
+    data = v_bean_atlas_poly_1_main_mbp,
+    aes(fill = MBPA_ID),
+    col = "red",
+    alpha = 0.25,
+    inherit.aes = FALSE
+  ) +
+  geom_sf_text(
+    data = v_bean_atlas_poly_1_main_mbp,
+    stat = "sf_coordinates",
+    position = "identity",
+    aes(geometry = geometry, label = paste(REGION)),
+    size = 2,
+    inherit.aes = FALSE
+  )
+
+habit_1 <- myAfricaMap +
+  geom_sf(
+    data = v_bean_atlas_poly_1_main_mbp,
+    aes(fill = HABIVPRE),
+    col = NA,
+    alpha = 1,
+    inherit.aes = FALSE
+  ) +
+    scale_fill_manual(values = c( "light green", "light yellow", "sky blue","dark green")) +
+  labs(fill = "----------\nC Bean\n----------")
+ 
+
+```
+
+## V2 Bean Atlas polygons
+
+```{r bean_atlas_2, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+
+v_bean_atlas_poly_2 <- st_read("D:/DatosProyecto/SpatialData/Africa/africa/RootRot/beanatlas/Ciatdb/BEANDB/Themes/Dataverse/AtlasBean_Data.shp")
+
+st_crs(v_bean_atlas_poly_2) = 4326
+str(v_bean_atlas_poly_2)
+#v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2 %>% replace_with_na(replace = list(CS_Maize = c(-999, -9999)))
+#v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2NA %>% replace_with_na(replace = list(CS_Sole = c(-999, -9999)))
+#v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2 %>% replace_with_na(replace = list(SD_GH_CL_A = c(-999, -9999)))
+v_bean_atlas_poly_2NA <- v_bean_atlas_poly_2 %>% replace_with_na(replace = list(SD_GH_SCL_ = c(-999, -9999)))
+
+str(v_bean_atlas_poly_2NA)
+
+
+myAfricaMap +
+    geom_sf(
+    data = v_bean_atlas_poly_2,
+    aes(fill = MBPA_ID),
+    col = "red",
+    alpha = 0.25,
+    inherit.aes = FALSE
+  )  +
+  geom_sf_text(
+    data = v_bean_atlas_poly_2,
+    stat = "sf_coordinates",
+    position = "identity",
+    aes(geometry = geometry, label = paste(MBPA_NAME)),
+    size = 2,
+    inherit.aes = FALSE
+  )
+
+```
+
+Plot variables
+
+```{r bean_atlas_2, cache=TRUE, fig.height = 4, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+
+
+maize_2 <- myAfricaMap +  
+  geom_sf(
+    data = v_bean_atlas_poly_2NA,
+    aes(fill = CS_Maize),
+    col = NA,
+    alpha = 1,
+    inherit.aes = FALSE
+  )  + 
+    scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "Greens")
+
+sole_2 <- myAfricaMap +  
+  geom_sf(
+    data = v_bean_atlas_poly_2NA,
+    aes(fill = CS_Sole),
+    col = NA,
+    alpha = 1,
+    inherit.aes = FALSE
+  )  + 
+    scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "Blues")
+
+
+habit_2 <- myAfricaMap +  
+  geom_sf(
+    data = v_bean_atlas_poly_2NA,
+    aes(fill = SD_GH_CL_A),
+    col = NA,
+    alpha = 1,
+    inherit.aes = FALSE
+  )  + 
+    scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "YlGn", na.value="white") +
+  labs(fill = "----------\nC Bean\n----------")
+
+habit_2s <- myAfricaMap +  
+  geom_sf(
+    data = v_bean_atlas_poly_2NA,
+    aes(fill = SD_GH_SCL_),
+    col = NA,
+    alpha = 1,
+    inherit.aes = FALSE
+  )  + 
+    scale_fill_distiller(direction = -1, trans = "reverse", type = "seq", palette = "YlGn", na.value="white") +
+  labs(fill = "----------\nS Bean\n----------")
+
+
+```
+
+# Compare
+
+## Sole crop
+
+```{r sole_compare, cache=TRUE, fig.height = 10, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+
+grid.arrange(sole_1, sole_2)
+
+```
+
+## Maize intercrop
+
+```{r maize_compare, cache=TRUE, fig.height = 10, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+
+grid.arrange(maize_1, maize_2)
+
+```
+
+## Climbing bean
+
+```{r CB_compare, cache=TRUE, fig.height = 15, fig.width = 7, fig.cap = "Sourcing Area Boundaries", dev = 'png'}
+
+grid.arrange(habit_1, habit_2, habit_2s)
+
+```
